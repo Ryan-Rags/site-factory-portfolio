@@ -4,6 +4,8 @@ Site Factory is a TypeScript workflow for discovering businesses through the off
 
 ![Synthetic Ironvale desktop example](docs/screenshots/home-desktop.png)
 
+[Responsive demo GIF](docs/responsive-demo.gif) shows the same synthetic homepage at desktop and mobile sizes. It is encoded from the verified screenshots with `node scripts/make-demo-gif.mjs` (optional FFmpeg dependency).
+
 ## Try it locally
 
 Use Node **22.13 or newer in the 22.x series** and pnpm **9.15.4**. No `.env` file is required for these commands.

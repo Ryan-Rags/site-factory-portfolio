@@ -1,16 +1,8 @@
 /**
- * The props every rendered form island needs, worked out once.
- *
- * Four places now mount a `ContactForm` — the contact page, the home page, the
- * CTA band, and the design families' equivalent of both — and the interesting
- * part of those props is not the field list but everything around it: which
- * mode this build resolved to, whether it is a demo (and so must send a
- * `prospectId`), and which upload limits apply. Working that out four times is
- * how three of them end up subtly wrong.
- *
- * Server-side only. It imports `site.config`, which imports every client's
- * config, and nothing that reaches the browser bundle may do that —
- * `src/lib/form-fields.ts` is the half that both sides share.
+ * One props projection for contact-page and compact quote form mounts.
+ * Field rules and upload limits share one contract. Portfolio builds resolve
+ * to local demo mode and never send prospect identifiers or form submissions.
+ * Server-side only: the browser shares the field-rule helpers, not the registry.
  */
 
 import { clientSlug, demoFormEndpoint, resolveForms, site } from '../../site.config';

@@ -10,3 +10,5 @@ These screenshots were captured from the local built default example using `pnpm
 - `not-found.png`: 404 state.
 
 No live website, real customer data or third-party media is represented. The browser suite writes fresh screenshots to ignored `artifacts/ui/`; selecting screenshots for documentation is an intentional review step.
+
+`../responsive-demo.gif` combines the desktop and mobile screenshots using FFmpeg. It contains no audio, external footage, account identifiers or personal data. Regenerate with `node scripts/make-demo-gif.mjs` after reviewing new screenshots.

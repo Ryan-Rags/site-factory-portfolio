@@ -48,6 +48,15 @@ try {
     assert.ok(await page.title());
   }
   await page.goto(base, { waitUntil: 'networkidle' });
+  const reduced = await page.evaluate(() => {
+    const button = document.querySelector('.d-btn');
+    const reveal = document.querySelector('[data-reveal]');
+    const durations = getComputedStyle(button).transitionDuration.split(',').map(value => parseFloat(value));
+    return { requested: matchMedia('(prefers-reduced-motion: reduce)').matches, transitionSeconds: Math.max(...durations), revealOpacity: reveal ? getComputedStyle(reveal).opacity : '1' };
+  });
+  assert.equal(reduced.requested, true);
+  assert.ok(reduced.transitionSeconds <= 0.00002, 'Reduced-motion transitions should be suppressed');
+  assert.equal(reduced.revealOpacity, '1', 'Reduced-motion content should already be visible');
   await page.screenshot({ path: join(output, 'home-desktop.png'), fullPage: false });
   await page.screenshot({ path: join(output, 'home-fullpage.png'), fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
