@@ -32,9 +32,8 @@ export interface FormIslandProps {
 }
 
 /**
- * The `forms` block as it applies to *this* build, not as the config wrote it.
- * A demo build (`DEMO_FORM_ENDPOINT` set) points every prospect at the one
- * shared Worker; without it this is exactly the client's own block.
+ * Resolve one effective forms block for all mounts. The portfolio resolver
+ * always chooses local demo mode; no environment endpoint activates delivery.
  */
 export function buildForms() {
   const resolved = resolveForms();

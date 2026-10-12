@@ -38,6 +38,13 @@ test('insufficient findings and unreachable sites block outreach drafts', () => 
   assert.throws(() => renderPitch(good), /check pitchBlocker first/);
   assert.match(pitchBlocker(fixtureAudit(fixtureLeads()[0], { loaded: false })), /could not be loaded/);
 });
+test('a draft never invents a completed preview or verified fix', () => {
+  const draft = renderPitch(fixtureAudit(fixtureLeads()[0])).markdown;
+  assert.doesNotMatch(draft, /I have built|with both fixed|a real working page built|^- Fixes:/m);
+  assert.match(draft, /I can prepare a preview addressing these findings after review/);
+  assert.match(draft, /completed preview and any claimed fixes need separate verification/);
+  assert.match(draft, /\[REVIEWED PREVIEW URL\]/);
+});
 test('call budget refuses an extra billable request before fetch', async () => {
   let calls = 0;
   const budget = new CallBudget(0);

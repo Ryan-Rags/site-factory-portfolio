@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { contactMode, type ResolvedFields } from '../lib/form-fields';
 
 /**
- * The only JavaScript on the site. Everything else is static HTML.
+ * React form island. Portfolio builds select the local-only demo mode.
  *
  * All copy and limits arrive as props from site.config.ts — nothing
  * client-specific is written in here.

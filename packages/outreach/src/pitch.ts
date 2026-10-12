@@ -128,8 +128,8 @@ export function renderPitch(result: AuditResult): PitchResult {
   lines.push(
     `I ran a quick check over ${site} — ${decapitalise(firstSentence(first.plain))} ` +
       `I also found that ${decapitalise(firstSentence(second.plain))} ` +
-      `I have built a working preview of what your site could look like with both fixed — ` +
-      `it is a real page, not a slide deck, and it is yours to look at either way: [MOCKUP URL].`,
+      `I can prepare a preview addressing these findings after review. ` +
+      `A completed preview and any claimed fixes need separate verification before sharing: [REVIEWED PREVIEW URL].`,
   );
   lines.push("");
   lines.push("_Findings cited above, with the measurement each came from:_");
@@ -155,7 +155,7 @@ export function renderPitch(result: AuditResult): PitchResult {
       : `- If they are engaged, offer to walk through the other ${findings.length - 2} item(s) found.`,
   );
   lines.push(
-    "- Offer the preview: a real working page built from their own services, no commitment.",
+    "- Offer to prepare a preview based on the verified service headings, subject to review, with no commitment.",
   );
   lines.push(
     "- Close: ask for an email address to send the preview link, and a good time to follow up.",
@@ -182,7 +182,7 @@ export function renderPitch(result: AuditResult): PitchResult {
   lines.push("**Proof points** — each is one of the findings above, stated as what the new page does instead:");
   lines.push("");
   for (const check of findings.slice(0, 3)) {
-    lines.push(`- Fixes: ${check.plain} _(${check.label}: ${check.evidence})_`);
+    lines.push(`- Proposed change: address this finding — ${check.plain} _(${check.label}: ${check.evidence})_`);
   }
   lines.push("");
   lines.push(
@@ -196,7 +196,7 @@ export function renderPitch(result: AuditResult): PitchResult {
     lines.push("");
   }
   lines.push(
-    "_This preview is the deliverable, not a throwaway: the same template ships as the live site._",
+    "_A reviewed preview can use the same template as the delivered site. No preview or completed fix is verified by this draft generator._",
   );
   lines.push("");
 

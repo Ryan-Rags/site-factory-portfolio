@@ -6,7 +6,7 @@ Site Factory is a TypeScript workflow for discovering businesses through the off
 
 ## Try it locally
 
-Use Node **22** and pnpm **9.15.4**. No `.env` file is required for these commands.
+Use Node **22.13 or newer in the 22.x series** and pnpm **9.15.4**. No `.env` file is required for these commands.
 
 ```sh
 corepack enable
