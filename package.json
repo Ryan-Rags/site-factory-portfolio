@@ -1,0 +1,39 @@
+{
+  "name": "site-factory",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Evidence-driven website audits, reviewable outreach drafts, and configurable Astro sites. Synthetic local demo.",
+  "engines": {
+    "node": ">=22 <23"
+  },
+  "packageManager": "pnpm@9.15.4",
+  "scripts": {
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "eslint packages scripts test --ext .ts,.tsx,.mjs",
+    "test": "pnpm --filter @site-factory/discover test && node --test \"test/*.test.mjs\"",
+    "demo": "node scripts/demo.mjs",
+    "dev": "pnpm --filter @site-factory/template dev --host 127.0.0.1",
+    "preview": "pnpm --filter @site-factory/template preview --host 127.0.0.1",
+    "verify:built": "node scripts/verify-built.mjs",
+    "test:ui": "node scripts/ui-check.mjs",
+    "scan:public": "node scripts/scan-public.mjs",
+    "discover": "node packages/discover/dist/cli.js",
+    "audit-sites": "node packages/audit/dist/cli.js",
+    "outreach": "node packages/outreach/dist/cli.js"
+  },
+  "devDependencies": {
+    "eslint": "^10.12.0",
+    "playwright": "^1.49.1",
+    "sharp": "^0.35.5",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.48.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "esbuild": "^0.28.1",
+      "@astrojs/react>@vitejs/plugin-react": "6.1.1"
+    }
+  }
+}

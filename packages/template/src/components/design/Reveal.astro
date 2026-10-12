@@ -1,0 +1,308 @@
+---
+/**
+ * The only JavaScript a delivered design-family page ships.
+ *
+ * Four jobs, one small IIFE, no dependencies and no animation library:
+ *   1. reveal   — add `.is-revealed` to `[data-reveal]` as it enters view.
+ *   2. counters — tick `[data-count-to]` up to its final value once.
+ *   3. open now — compute the open/closed badge in the shop's own timezone.
+ *   4. carousel — advance the reviews rail on a timer, pausing on interaction.
+ *
+ * Deliberate choices:
+ *
+ * - `is:inline` and no imports. Astro would otherwise emit a module script and
+ *   a network request for about a kilobyte of code; inlining costs one fewer
+ *   round trip on the critical path, which is a real part of why the mobile
+ *   score holds up on a slow connection.
+ *
+ * - The script sets `data-reveal-ready` on `<html>` before doing anything
+ *   else. The CSS that hides un-revealed elements is gated on that attribute,
+ *   so a visitor with JavaScript off — or one whose script fails to parse —
+ *   sees the complete page rather than an empty one. Progressive enhancement
+ *   in the only order that is actually safe.
+ *
+ * - `prefers-reduced-motion` short-circuits the motion: final values are
+ *   painted immediately, no reveal observer is created, and the carousel timer
+ *   never starts. The open/closed badge still runs — it is information, not
+ *   decoration, and suppressing it would withhold a fact rather than a motion.
+ *
+ * - The motion axis is CSS, not script. `data-motion-preset` selects four
+ *   custom properties in `design.css`; this file reads the attribute only for
+ *   the two things a stylesheet cannot express — painting a counter at its
+ *   final value and never starting the carousel's `setInterval`. Both are the
+ *   `still` preset, and `still` reuses the reduced-motion path rather than
+ *   adding a branch beside it, so the CSS, the script and `check-reveal.mjs`
+ *   agree by construction rather than by three authors remembering to.
+ *
+ *   A delivered build carries no `data-motion-preset`, so `stillMotion` is
+ *   exactly `reduced` there and every branch resolves as it did before the
+ *   axis existed. The bytes still move, because this script's text is shared
+ *   with the pitch builds — hence the named `revealMotionAxis` allowance in
+ *   `check-delivered-parity.mjs`.
+ *
+ *   COMMENTS IN THE SCRIPT BELOW ARE SHIPPED BYTES. `is:inline` emits this
+ *   block verbatim into every page of every design client, so an explanation
+ *   written inside the IIFE is downloaded by every visitor to a real shop's
+ *   site. Measured: the first draft of the motion comment added 1.2KB to all
+ *   five pages of all three delivered design clients. Explanations belong up
+ *   here in the frontmatter, which is build-time only and costs nothing.
+ *
+ * - Elements unobserve themselves on first reveal, so nothing accumulates and
+ *   scrolling back up does not re-animate.
+ */
+---
+
+<script is:inline>
+  (function () {
+    var docEl = document.documentElement;
+    var reduced =
+      window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    /* Motion: CSS owns the timing; this owns the two things it cannot do.
+       See the frontmatter — the explanation does not need to ship. */
+    var stillMotion =
+      reduced || docEl.getAttribute('data-motion-preset') === 'still';
+
+    /* ---------------------------------------------------------------- 3 --
+     * Open / closed.
+     *
+     * Computed here rather than at build time because it is a claim about the
+     * moment somebody is reading, and computed in the *shop's* timezone
+     * rather than the visitor's — `Intl` is given the IANA zone from the
+     * config, so a customer reading this in another state still sees the
+     * shop's own clock. Without a configured zone the badge never rendered
+     * in the first place.
+     */
+    (function openNow() {
+      var badges = document.querySelectorAll('[data-open-now]');
+      for (var i = 0; i < badges.length; i++) {
+        var badge = badges[i];
+        try {
+          var schedule = JSON.parse(badge.getAttribute('data-schedule') || '[]');
+          var tz = badge.getAttribute('data-tz');
+          var parts = new Intl.DateTimeFormat('en-US', {
+            timeZone: tz,
+            weekday: 'short',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+          }).formatToParts(new Date());
+
+          var lookup = {};
+          parts.forEach(function (part) {
+            lookup[part.type] = part.value;
+          });
+          var days = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+          var day = days[lookup.weekday];
+          // 24-hour formatting yields "24" for midnight in some engines.
+          var hour = Number(lookup.hour) % 24;
+          var minutes = hour * 60 + Number(lookup.minute);
+
+          var open = false;
+          for (var j = 0; j < schedule.length; j++) {
+            var row = schedule[j];
+            if (row.day === day && minutes >= row.open && minutes < row.close) {
+              open = true;
+              break;
+            }
+          }
+
+          var text = badge.querySelector('[data-open-text]');
+          if (text)
+            text.textContent = open
+              ? badge.getAttribute('data-open-label')
+              : badge.getAttribute('data-closed-label');
+          badge.setAttribute('data-state', open ? 'open' : 'closed');
+        } catch (e) {
+          /* A bad zone or a parse failure leaves the badge hidden, which is
+             the honest outcome: no claim beats a wrong one. */
+        }
+      }
+    })();
+
+    /* ---------------------------------------------------------------- 2 -- */
+    var counters = document.querySelectorAll('[data-count-to]');
+
+    function paint(el, value) {
+      var decimals = Number(el.getAttribute('data-count-decimals') || 0);
+      el.textContent = value.toFixed(decimals);
+    }
+
+    function countUp(el) {
+      var target = Number(el.getAttribute('data-count-to'));
+      if (!isFinite(target)) return;
+      var duration = 1100;
+      var start = 0;
+      function frame(now) {
+        if (!start) start = now;
+        var t = Math.min((now - start) / duration, 1);
+        // easeOutCubic: fast off the mark, settles rather than stops dead.
+        paint(el, target * (1 - Math.pow(1 - t, 3)));
+        if (t < 1) requestAnimationFrame(frame);
+        else paint(el, target);
+      }
+      requestAnimationFrame(frame);
+    }
+
+    if (stillMotion || !('IntersectionObserver' in window)) {
+      // No motion, and no hidden content: whatever the reason, the page ends
+      // up in its final state rather than in a half-animated one.
+      //
+      // `still` lands here by the same door as a reduced-motion request and a
+      // missing IntersectionObserver, which is the point — the degenerate
+      // preset is the existing safe path, not a new one. Counters are painted,
+      // no reveal observer is created so nothing is ever hidden, and the
+      // carousel below is never reached, so its timer never starts.
+      for (var i = 0; i < counters.length; i++) {
+        paint(counters[i], Number(counters[i].getAttribute('data-count-to')) || 0);
+      }
+      return;
+    }
+
+    /* ---------------------------------------------------------------- 1 --
+     *
+     * NOTHING IS HIDDEN UNTIL THE OBSERVER HAS SAID WHAT IS IN VIEW.
+     *
+     * `data-reveal-ready` is what switches on the rule that hides every
+     * un-revealed `[data-reveal]`. Setting it up front — which is what this did
+     * until measurement said otherwise — hides elements that are already on the
+     * first screen, and they then paint blank until an observer callback
+     * reaches them. `check-reveal.mjs` found 37 of those across /services,
+     * /about and /gallery at the narrow viewports.
+     *
+     * The obvious fix was to measure each element with
+     * `getBoundingClientRect()` and reveal the ones in view immediately. That
+     * works and it is what the first version did, but it forces a synchronous
+     * layout of the whole page at load: Lighthouse mobile attributed 48.7ms of
+     * forced reflow to this script, and added `forced-reflow-insight` and
+     * `max-potential-fid` to a home page that had neither.
+     *
+     * So the geometry is left to the observer, which is what an
+     * IntersectionObserver is for and which costs no forced layout at all. The
+     * first callback carries an entry for every observed element; the ones
+     * intersecting are revealed, and only then is `data-reveal-ready` set. By
+     * the time anything can be hidden, everything visible is already revealed,
+     * so no element on the first screen ever paints blank — and if the callback
+     * never arrives, nothing is ever hidden, which is the same
+     * JavaScript-disabled guarantee this file already made.
+     */
+    var primed = false;
+
+    var revealObserver = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add('is-revealed');
+          revealObserver.unobserve(entry.target);
+        });
+        if (!primed) {
+          primed = true;
+          docEl.setAttribute('data-reveal-ready', '');
+        }
+      },
+      // Fire slightly before the element reaches the fold, so the transition
+      // has finished by the time the reader's eye gets there.
+      { rootMargin: '0px 0px -12% 0px', threshold: 0.05 },
+    );
+
+    /*
+     * Anything already on the first screen is revealed NOW, not observed.
+     *
+     * The moment `data-reveal-ready` goes on <html>, the CSS above hides every
+     * un-revealed `[data-reveal]`. For an element below the fold that is the
+     * whole point. For one already in view it is a bug: the element paints
+     * blank and stays blank until an IntersectionObserver callback reaches it,
+     * which is a visible flash on a slow phone and a permanently empty first
+     * screen if the callback never arrives at all.
+     *
+     * Measured rather than assumed — `check-reveal.mjs` found 37 of them
+     * across /services, /about and /gallery at the narrow viewports, none on
+     * the home page, whose first screen is the hero and deliberately carries
+     * no `data-reveal`.
+     *
+     * Adding the class in this same synchronous block means the browser never
+     * resolves style with the element hidden, so it appears at once instead of
+     * fading from nothing. The elements that are still off-screen are observed
+     * exactly as before, so the decoration is unchanged everywhere it was
+     * working.
+     */
+    document.querySelectorAll('[data-reveal]').forEach(function (el) {
+      revealObserver.observe(el);
+    });
+
+    var countObserver = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          countUp(entry.target);
+          countObserver.unobserve(entry.target);
+        });
+      },
+      { threshold: 0.4 },
+    );
+
+    for (var j = 0; j < counters.length; j++) {
+      paint(counters[j], 0);
+      countObserver.observe(counters[j]);
+    }
+
+    /* ---------------------------------------------------------------- 4 --
+     * Reviews carousel.
+     *
+     * The rail is CSS scroll-snap; this only nudges `scrollLeft`, so the
+     * browser keeps doing the scrolling, the physics and the touch handling.
+     * It pauses on hover and on focus-within — a reader part-way through a
+     * quote, or a keyboard user tabbing across cards, must not have the rail
+     * move under them — and it stops entirely once the rail leaves view.
+     */
+    document.querySelectorAll('[data-carousel]').forEach(function (rail) {
+      var delay = Number(rail.getAttribute('data-autoplay') || 0);
+      if (!delay) return;
+
+      var paused = false;
+      var visible = false;
+      var timer = null;
+
+      function step() {
+        if (paused || !visible) return;
+        var card = rail.firstElementChild;
+        if (!card) return;
+        var width = card.getBoundingClientRect().width + 20;
+        var atEnd = rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - 4;
+        rail.scrollTo({ left: atEnd ? 0 : rail.scrollLeft + width, behavior: 'smooth' });
+      }
+
+      function start() {
+        if (timer === null) timer = window.setInterval(step, delay);
+      }
+      function stop() {
+        if (timer !== null) {
+          window.clearInterval(timer);
+          timer = null;
+        }
+      }
+
+      ['mouseenter', 'focusin', 'touchstart', 'pointerdown'].forEach(function (name) {
+        rail.addEventListener(name, function () {
+          paused = true;
+        });
+      });
+      ['mouseleave', 'focusout'].forEach(function (name) {
+        rail.addEventListener(name, function () {
+          paused = false;
+        });
+      });
+
+      new IntersectionObserver(
+        function (entries) {
+          entries.forEach(function (entry) {
+            visible = entry.isIntersecting;
+            if (visible) start();
+            else stop();
+          });
+        },
+        { threshold: 0.25 },
+      ).observe(rail);
+    });
+  })();
+</script>

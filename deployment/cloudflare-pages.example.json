@@ -1,0 +1,18 @@
+{
+  "exampleOnly": true,
+  "platform": "Cloudflare Pages",
+  "productionBranch": "main",
+  "buildCommand": "pnpm build",
+  "buildOutputDirectory": "packages/template/dist/portfolio-ironvale-fabrication",
+  "environment": {
+    "NODE_VERSION": "22",
+    "SITE_CLIENT": "portfolio-ironvale-fabrication"
+  },
+  "notes": [
+    "This file is documentation, not a deployable account configuration.",
+    "No Cloudflare adapter is needed for static Astro output.",
+    "The build generates _headers in the output directory.",
+    "Review before publishing; this repo contains no automatic deployment command."
+  ],
+  "reference": "https://developers.cloudflare.com/pages/framework-guides/deploy-an-astro-site/"
+}

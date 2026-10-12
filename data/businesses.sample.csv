@@ -1,0 +1,4 @@
+name,url,niche,city,phone,source,notes,place_id,rating,review_count,address,discovered_at
+"Ironvale Welding & Fabrication","https://ironvale.example.invalid","synthetic trades","Demo County","(202) 555-0110","places-fixture","Synthetic data; never contact","fixture-ironvale","4.6","24","18 Fictional Foundry Row, Ironvale, Demo Region 00000","2026-01-01T00:00:00.000Z"
+"Northmark Heating & Air","https://northmark.example.invalid","synthetic trades","Demo County","(202) 555-0111","places-fixture","Synthetic data; never contact","fixture-northmark","","","22 Synthetic Lane, Northmark, Demo Region 00000","2026-01-01T00:00:00.000Z"
+"Elderbrook Masonry","","synthetic trades","Demo County","(202) 555-0112","places-fixture","Synthetic data; never contact","fixture-elderbrook","","","7 Imaginary Walk, Elderbrook, Demo Region 00000","2026-01-01T00:00:00.000Z"

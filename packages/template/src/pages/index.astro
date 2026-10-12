@@ -1,0 +1,90 @@
+---
+import { getEntry } from 'astro:content';
+import { site, clientSlug } from '../../site.config';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+import TrustStrip from '../components/TrustStrip.astro';
+import ServicesGrid from '../components/ServicesGrid.astro';
+import StoryTeaser from '../components/StoryTeaser.astro';
+import Testimonials from '../components/Testimonials.astro';
+import Equipment from '../components/Equipment.astro';
+import Updates from '../components/Updates.astro';
+import ServiceAreas from '../components/ServiceAreas.astro';
+import Faq from '../components/Faq.astro';
+import CtaBand from '../components/CtaBand.astro';
+import QuickQuote from '../components/QuickQuote.astro';
+import DesignLayout from '../components/design/DesignLayout.astro';
+import DesignHome from '../components/design/DesignHome.astro';
+
+
+
+
+
+
+
+
+
+
+
+
+
+const design = site.design;
+
+// The legacy path needs the about entry; the design path does not, and asking
+// for it would make a design client fail the build over an unused file.
+const story = design ? null : await getEntry('about', `${clientSlug}/${site.about.entry}`);
+if (!design && !story) {
+  throw new Error(
+    `${clientSlug}: about.entry is "${site.about.entry}" but src/content/about/${clientSlug}/${site.about.entry}.md does not exist.`,
+  );
+}
+
+// First two paragraphs of the story, as plain text, for the teaser.
+const excerpt =
+  story?.body?.split(/\n{2,}/).slice(0, 1).join(' ').replace(/\s+/g, ' ').trim() ?? '';
+---
+
+{
+  design ? (
+    <DesignLayout
+      design={design}
+      title={site.pages.home.title ?? `${site.business.name} — ${site.business.tagline}`}
+      description={site.pages.home.metaDescription}
+      bareTitle
+      preloadImage={design.sections.hero.image.src}
+    >
+      <DesignHome design={design} />
+    </DesignLayout>
+  ) : (
+    <BaseLayout
+      title={site.pages.home.title ?? `${site.business.name} — ${site.business.tagline}`}
+      description={site.pages.home.metaDescription}
+      bareTitle
+      preloadImage={site.hero.image}
+      faqJsonLd
+    >
+      <Hero />
+      <TrustStrip />
+      {/* The quote block sits directly under the trust strip, above the
+          services grid: on a phone that is the first screen after the hero, and
+          the whole point of the block is to catch somebody who has not yet
+          decided to go looking for a contact page. It renders nothing at all —
+          not an empty section — unless this client's config asks for it here. */}
+      <QuickQuote placement="home" />
+      <ServicesGrid
+        heading={site.pages.home.servicesHeading}
+        intro={site.pages.home.servicesIntro}
+      />
+      <StoryTeaser excerpt={excerpt} />
+      <Equipment />
+      <Testimonials />
+      <ServiceAreas />
+      <Updates />
+      {/* The FAQ sits after the service areas and before the final CTA: a reader
+          who is still going at this point has a specific question, and the CTA
+          should be the thing they hit once it is answered. */}
+      <Faq />
+      <CtaBand />
+    </BaseLayout>
+  )
+}

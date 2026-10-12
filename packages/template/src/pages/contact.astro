@@ -1,0 +1,195 @@
+---
+import { site } from '../../site.config';
+import { smsHref, telHref } from '../lib/business';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ContactForm from '../components/ContactForm';
+import PageHeader from '../components/PageHeader.astro';
+import Icon from '../components/Icon.astro';
+import TextUsLink from '../components/TextUsLink.astro';
+import { buildForms, contactFormProps } from '../lib/quote-form';
+import DesignLayout from '../components/design/DesignLayout.astro';
+import DesignPage from '../components/design/DesignPage.astro';
+import DesignContact from '../components/design/DesignContact.astro';
+
+/** See the note on the same fork in `index.astro`. */
+const design = site.design;
+
+const { business } = site;
+const hours = business.hours ?? [];
+
+/**
+ * `forms` here is the *resolved* mode, not the config's. A demo build
+ * (`DEMO_FORM_ENDPOINT` set) points every prospect at the one shared Worker;
+ * without it this is exactly the client's own `site.forms`. See site.config.ts.
+ */
+const forms = buildForms();
+
+/**
+ * Which fields this client asks for, and everything else the island needs.
+ * Resolving throws when the rules would accept a lead nobody can answer, which
+ * is a build failure by design — see `src/lib/form-fields.ts`.
+ */
+const formProps = forms.mode === 'disabled' ? null : contactFormProps();
+
+// `mailto` needs an inbox to send to. A config that asks for it without a
+// confirmed email is a configuration error, not something to paper over with
+// a dead form — fail the build loudly instead.
+if (forms.mode === 'mailto' && !business.email) {
+  throw new Error(
+    `forms.mode is "mailto" but business.email is not set. Set an email or use forms.mode "disabled".`,
+  );
+}
+if (forms.mode === 'worker' && forms.workerEndpoint === '') {
+  // Not fatal: this is the normal pre-deploy state for a mockup. The form
+  // renders and validates but reports that submission is not wired up.
+  console.warn(`[${site.business.name}] forms.mode "worker" with no endpoint — form is inert.`);
+}
+
+const fmt = (t: string) => {
+  const [hStr = '0', m = '00'] = t.split(':');
+  const h = Number(hStr);
+  const suffix = h >= 12 ? 'pm' : 'am';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return m === '00' ? `${h12}${suffix}` : `${h12}:${m}${suffix}`;
+};
+---
+
+{
+  design ? (
+    <DesignLayout design={design} title="Contact" description={site.pages.contact.metaDescription}>
+      <DesignPage design={design}>
+        <DesignContact />
+      </DesignPage>
+    </DesignLayout>
+  ) : (
+    <BaseLayout title="Contact" description={site.pages.contact.metaDescription}>
+  <PageHeader title={site.pages.contact.title} intro={site.pages.contact.intro} />
+
+  <section class="section">
+    <div class="container-page">
+      <div class="grid gap-10 lg:grid-cols-[minmax(0,22rem)_1fr] lg:gap-14">
+        <div class="space-y-8">
+          <div>
+            <h2 class="text-2xl">Reach us directly</h2>
+            <ul class="mt-4 space-y-4">
+              <li class="flex items-start gap-3">
+                <span class="mt-1 shrink-0 text-accent-dark"><Icon name="phone" class="h-5 w-5" /></span>
+                <span>
+                  <span class="block text-sm font-bold text-slate-900">Phone</span>
+                  <a
+                    class="text-lg font-bold text-primary underline-offset-4 hover:underline"
+                    href={telHref(business)}>{business.phone}</a
+                  >
+                </span>
+              </li>
+              {
+                /* A second row rather than a link tucked under the number:
+                   texting is a different decision from calling, and on a phone
+                   it wants its own tap target. Renders only when a textable
+                   number is confirmed. */
+                smsHref(business) && (
+                  <li class="flex items-start gap-3">
+                    <span class="mt-1 shrink-0 text-accent-dark">
+                      <Icon name="message" class="h-5 w-5" />
+                    </span>
+                    <span>
+                      <span class="block text-sm font-bold text-slate-900">Text</span>
+                      <TextUsLink
+                        class="inline-flex items-center gap-2 text-lg font-bold text-primary underline-offset-4 hover:underline"
+                        label={business.smsHref === business.phoneHref ? business.phone : 'Send us a text'}
+                        icon={false}
+                      />
+                    </span>
+                  </li>
+                )
+              }
+              {
+                business.email && (
+                  <li class="flex items-start gap-3">
+                    <span class="mt-1 shrink-0 text-accent-dark"><Icon name="badge" class="h-5 w-5" /></span>
+                    <span class="min-w-0">
+                      <span class="block text-sm font-bold text-slate-900">Email</span>
+                      <a
+                        class="break-words text-primary underline-offset-4 hover:underline"
+                        href={`mailto:${business.email}`}>{business.email}</a
+                      >
+                    </span>
+                  </li>
+                )
+              }
+              <li class="flex items-start gap-3">
+                <span class="mt-1 shrink-0 text-accent-dark"><Icon name="truck" class="h-5 w-5" /></span>
+                <span>
+                  <span class="block text-sm font-bold text-slate-900">Drop off &amp; collect</span>
+                  <address class="mt-1 not-italic text-slate-700">
+                    {business.address.street && <Fragment>{business.address.street}<br /></Fragment>}
+                    {business.address.locality}, {business.address.region}
+                    {business.address.postalCode}
+                  </address>
+                  {
+                    business.mapUrl && (
+                      <a
+                        class="mt-2 inline-block text-sm font-semibold text-primary underline underline-offset-4"
+                        href={business.mapUrl}
+                        rel="noopener noreferrer"
+                        target="_blank"
+                      >
+                        Open in maps
+                      </a>
+                    )
+                  }
+                </span>
+              </li>
+            </ul>
+          </div>
+
+          {
+            hours.length > 0 && (
+              <div>
+                <h2 class="text-2xl">Shop hours</h2>
+                <dl class="mt-4 divide-y divide-slate-200 border-y border-slate-200">
+                  {hours.map((h) => (
+                    <div class="flex justify-between gap-4 py-2.5 text-sm">
+                      <dt class="font-semibold text-slate-800">{h.day}</dt>
+                      <dd class="text-slate-600">
+                        {h.closed || !h.opens || !h.closes
+                          ? 'Closed'
+                          : `${fmt(h.opens)} – ${fmt(h.closes)}`}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            )
+          }
+        </div>
+
+        {
+          forms.mode !== 'disabled' && formProps && (
+            <div class="rounded-lg border border-slate-200 bg-slate-50 p-5 sm:p-8">
+              <h2 class="text-2xl">{site.cta.buttonText}</h2>
+              {/* The "fields marked * are required" hint lives inside the form
+                  component, not here: it belongs to the form's idle state, and
+                  left on the page it sat there contradicting the success
+                  message after a submission. */}
+
+              <div class="mt-6">
+                <ContactForm client:visible {...formProps} />
+              </div>
+            </div>
+          )
+        }
+      </div>
+        </div>
+      </section>
+    </BaseLayout>
+  )
+}
+
+{
+  /* Turnstile's script is requested only when a site key is configured, so the
+     default build makes no third-party network call whatsoever. */
+  forms.turnstileSiteKey && (
+    <script is:inline defer src="https://challenges.cloudflare.com/turnstile/v0/api.js" />
+  )
+}

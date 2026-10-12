@@ -1,0 +1,32 @@
+{
+  "places": [
+    {
+      "id": "fixture-ironvale",
+      "displayName": {
+        "text": "Ironvale Welding & Fabrication"
+      },
+      "websiteUri": "https://ironvale.example.invalid",
+      "nationalPhoneNumber": "(202) 555-0110",
+      "formattedAddress": "18 Fictional Foundry Row, Ironvale, Demo Region 00000",
+      "rating": 4.6,
+      "userRatingCount": 24
+    },
+    {
+      "id": "fixture-northmark",
+      "displayName": {
+        "text": "Northmark Heating & Air"
+      },
+      "websiteUri": "https://northmark.example.invalid",
+      "nationalPhoneNumber": "(202) 555-0111",
+      "formattedAddress": "22 Synthetic Lane, Northmark, Demo Region 00000"
+    },
+    {
+      "id": "fixture-elderbrook",
+      "displayName": {
+        "text": "Elderbrook Masonry"
+      },
+      "nationalPhoneNumber": "(202) 555-0112",
+      "formattedAddress": "7 Imaginary Walk, Elderbrook, Demo Region 00000"
+    }
+  ]
+}

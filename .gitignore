@@ -1,0 +1,14 @@
+node_modules/
+**/dist/
+**/.astro/
+.env
+.env.*
+!.env.example
+*.local.*
+artifacts/
+audit/
+outreach/
+data/*.csv
+!data/businesses.sample.csv
+playwright-report/
+test-results/

@@ -1,0 +1,6 @@
+packages:
+  - "packages/discover"
+  - "packages/audit"
+  - "packages/outreach"
+  - "packages/copy"
+  - "packages/template"

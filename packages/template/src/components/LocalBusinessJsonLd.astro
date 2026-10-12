@@ -1,0 +1,165 @@
+---
+import { site, cardOrigin } from '../../site.config';
+
+/**
+ * schema.org LocalBusiness, built entirely from site.config.ts.
+ *
+ * Deliberately omitted: `aggregateRating` and `review` — we will not emit
+ * review markup we cannot attribute to a real, verifiable review, and we do
+ * hold review counts, so this is a standing decision rather than a missing
+ * feature — and `priceRange`, which is unknown. Adding an unverified value
+ * here would be fabricating structured data that search engines treat as a
+ * factual claim.
+ *
+ * `geo` was on that list for the same reason and is now emitted — but only
+ * when `business.geo` is present, and the only thing that populates that
+ * field is the discovery pipeline's Places ingestion path. The rule has not
+ * loosened. A `Geo` cannot be constructed without a `source`, so an unsourced
+ * coordinate pair has nowhere to come from.
+ *
+ * A second script follows for `FAQPage`, emitted only when there is an FAQ.
+ * Separate rather than nested: the FAQ describes this page, the LocalBusiness
+ * describes the business, and merging the two is how a rich result gets
+ * withdrawn.
+ */
+interface Props {
+  /** True on the page that renders the FAQ. See `BaseLayout`'s `faqJsonLd`. */
+  faq?: boolean | undefined;
+}
+
+const { faq: withFaq = false } = Astro.props;
+const { business, brand, seo } = site;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const assetBase = cardOrigin !== '' ? cardOrigin : (Astro.site ?? seo.siteUrl);
+
+const openingHours = (business.hours ?? [])
+  .filter((h) => !h.closed && h.opens && h.closes)
+  .map((h) => ({
+    '@type': 'OpeningHoursSpecification',
+    dayOfWeek: `https://schema.org/${h.day}`,
+    opens: h.opens,
+    closes: h.closes,
+  }));
+
+/**
+ * `areaServed` prefers the towns the visible copy commits to.
+ *
+ * When a service-area section exists, the structured data and the page must
+ * name the same places — an inconsistency between the two is exactly what
+ * gets structured data distrusted, and it is free to avoid. `serviceArea`
+ * remains the fallback for clients with no section.
+ */
+/**
+ * Which section is *actually on the page* depends on which shell rendered it.
+ *
+ * `BaseLayout` clients render `site.serviceAreas`. Design-family clients render
+ * `design.sections.serviceArea.areas` through `design/ServiceArea.astro` and
+ * never look at `site.serviceAreas` at all — so reading the latter here told
+ * three of them to claim towns their pages have never mentioned. K&S Welding
+ * advertised Tenafly, Englewood, Paramus and Hackensack in its structured data
+ * while the visible copy committed to six other places, which is the precise
+ * inconsistency the note above says is free to avoid.
+ *
+ * So the section is read from whichever shell is in play, mirroring
+ * `ServiceArea.astro`'s own fallback to `business.serviceArea` when the design
+ * config leaves `areas` empty. `scripts/check-schema.mjs` holds the line: a
+ * town in the graph that appears nowhere on the site now fails the build.
+ */
+const designArea = site.design?.sections.serviceArea;
+const sectionTowns =
+  designArea?.enabled === true
+    ? designArea.areas.length > 0
+      ? designArea.areas
+      : business.serviceArea
+    : (site.serviceAreas?.towns ?? []).map((t) => t.town);
+
+const areaNames = [
+  ...sectionTowns,
+  ...business.serviceArea.filter((a) => !sectionTowns.includes(a)),
+];
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'LocalBusiness',
+  '@id': new URL('/', seo.siteUrl).href,
+  name: business.name,
+  legalName: business.legalName,
+  description: seo.defaultDescription,
+  url: new URL('/', seo.siteUrl).href,
+  telephone: business.phone,
+  // Unconfirmed fields are omitted from the graph entirely rather than
+  // emitted empty. Structured data is read as a factual claim; `email: ""`
+  // or `postalCode: "[verify with client]"` would be a false one.
+  ...(business.email ? { email: business.email } : {}),
+  ...(business.foundedYear !== undefined
+    ? { foundingDate: String(business.foundedYear) }
+    : {}),
+  image: new URL(brand.ogImage, assetBase).href,
+  logo: new URL(brand.logo, assetBase).href,
+  address: {
+    '@type': 'PostalAddress',
+    ...(business.address.street ? { streetAddress: business.address.street } : {}),
+    addressLocality: business.address.locality,
+    addressRegion: business.address.region,
+    ...(business.address.postalCode ? { postalCode: business.address.postalCode } : {}),
+    addressCountry: business.address.country,
+  },
+  ...(business.geo === undefined
+    ? {}
+    : {
+        geo: {
+          '@type': 'GeoCoordinates',
+          latitude: business.geo.latitude,
+          longitude: business.geo.longitude,
+        },
+      }),
+  areaServed: areaNames.map((name) => ({ '@type': 'Place', name })),
+  openingHoursSpecification: openingHours,
+  makesOffer: site.services.map((s) => ({
+    '@type': 'Offer',
+    itemOffered: { '@type': 'Service', name: s.title, description: s.oneLiner },
+  })),
+};
+
+const faq = withFaq ? (site.faq ?? []) : [];
+const faqJsonLd =
+  faq.length === 0
+    ? null
+    : {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: faq.map((item) => ({
+          '@type': 'Question',
+          name: item.question,
+          acceptedAnswer: { '@type': 'Answer', text: item.answer },
+        })),
+      };
+---
+
+<script type="application/ld+json" set:html={JSON.stringify(jsonLd)} is:inline />
+{
+  faqJsonLd !== null && (
+    <script type="application/ld+json" set:html={JSON.stringify(faqJsonLd)} is:inline />
+  )
+}

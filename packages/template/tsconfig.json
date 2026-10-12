@@ -1,0 +1,20 @@
+{
+  "extends": "astro/tsconfigs/strict",
+  "include": [".astro/types.d.ts", "**/*.ts", "**/*.tsx", "**/*.astro"],
+  // Both Workers target the Workers runtime, not the browser, and need
+  // @cloudflare/workers-types — a wrangler dependency installed per
+  // deployment rather than in this monorepo. Their typecheck is
+  // `wrangler deploy --dry-run` from their own directory.
+  "exclude": ["dist", "worker", "worker-demo"],
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "exactOptionalPropertyTypes": true,
+    "useUnknownInCatchVariables": true,
+    "forceConsistentCasingInFileNames": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "react"
+  }
+}
