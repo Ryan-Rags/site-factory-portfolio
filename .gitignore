@@ -6,8 +6,8 @@ node_modules/
 !.env.example
 *.local.*
 artifacts/
-audit/
-outreach/
+/audit/
+/outreach/
 data/*.csv
 !data/businesses.sample.csv
 playwright-report/
